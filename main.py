@@ -22,12 +22,13 @@ cactus_image = pygame.transform.scale(cactus_image, (30, 50))
 bonus_image = pygame.image.load("C:\\Users\\Admin\\PycharmProjects\\Chrome_Dino\\res\\bonus.png")
 bonus_image = pygame.transform.scale(bonus_image, (30, 30))
 
-# змінні для фонів
 background_images = [
     pygame.transform.scale(
-        pygame.image.load(f"C:\\Users\\Admin\\PycharmProjects\\Chrome_Dino\\res\\{i}.jpg"), (SCREEN_WIDTH, SCREEN_HEIGHT)
+        pygame.image.load(f"C:\\Users\\Admin\\PycharmProjects\\Chrome_Dino\\res\\{i}.jpg"),
+        (SCREEN_WIDTH, SCREEN_HEIGHT)
     ) for i in range(1, 7)
 ]
+
 
 class Dino:
     def __init__(self):
@@ -56,6 +57,7 @@ class Dino:
     def draw(self):
         screen.blit(self.image, self.rect)
 
+
 class Cactus:
     def __init__(self, x):
         self.image = cactus_image
@@ -64,11 +66,11 @@ class Cactus:
     def update(self, speed):
         self.rect.x -= speed
         if self.rect.right < 0:
-            # Перезапуск з нового випадкового положення
             self.rect.left = random.randint(SCREEN_WIDTH + 100, SCREEN_WIDTH + 300)
 
     def draw(self):
         screen.blit(self.image, self.rect)
+
 
 class Bonus:
     def __init__(self, x):
@@ -83,9 +85,11 @@ class Bonus:
     def draw(self):
         screen.blit(self.image, self.rect)
 
+
 def display_text(text, x, y):
     surface = FONT.render(text, True, (0, 0, 0))
     screen.blit(surface, (x, y))
+
 
 def choose_difficulty():
     while True:
@@ -109,6 +113,7 @@ def choose_difficulty():
 
         pygame.display.flip()
 
+
 def choose_timer():
     while True:
         screen.fill((255, 255, 255))
@@ -130,6 +135,26 @@ def choose_timer():
                     return 90
 
         pygame.display.flip()
+
+
+def game_over_menu(score):
+    while True:
+        screen.fill((255, 255, 255))
+        display_text(f"Game Over! Score: {int(score)}", SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50)
+        display_text("Press R to Restart or C to Continue", SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    return "restart"
+                if event.key == pygame.K_c:
+                    return "continue"
+
+        pygame.display.flip()
+
 
 def main_game():
     dino = Dino()
@@ -163,13 +188,19 @@ def main_game():
             if dino.rect.colliderect(cactus.rect):
                 lives -= 1
                 cactus.rect.left = random.randint(SCREEN_WIDTH, SCREEN_WIDTH + 200)
-                if lives <= 0:
-                    return score
+                if lives > 0:
+                    continue_choice = game_over_menu(score)
+                    if continue_choice == "restart":
+                        return score, "restart"
+                    elif continue_choice == "continue":
+                        continue  # Continue the game
+                else:
+                    return score, "game over"
 
         for bonus in bonuses:
             bonus.update(obstacle_speed)
             if dino.rect.colliderect(bonus.rect):
-                dino.double_jumps_left += 1  # Збільшити кількість подвійних стрибків
+                dino.double_jumps_left += 1
                 bonus.rect.left = random.randint(SCREEN_WIDTH + 100, SCREEN_WIDTH + 400)
 
         background_timer += 1
@@ -193,10 +224,11 @@ def main_game():
         score += 0.1
         timer -= 1 / FPS
         if timer <= 0:
-            return score
+            return score, "game over"
 
         pygame.display.flip()
         clock.tick(FPS)
+
 
 def start_menu():
     while True:
@@ -214,23 +246,16 @@ def start_menu():
 
         pygame.display.flip()
 
-def game_over_menu(score):
-    while True:
-        screen.fill((255, 255, 255))
-        display_text(f"Game Over! Score: {int(score)}", SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 50)
-        display_text("Press SPACE to Restart", SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    return
-
-        pygame.display.flip()
 
 while True:
     start_menu()
-    final_score = main_game()
-    game_over_menu(final_score)
+    final_score, game_status = main_game()
+
+    if game_status == "restart":
+        continue
+    elif game_status == "game over":
+        restart_or_continue = game_over_menu(final_score)
+        if restart_or_continue == "restart":
+            continue
+        elif restart_or_continue == "continue":
+            continue
